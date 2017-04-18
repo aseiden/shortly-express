@@ -53,6 +53,7 @@ function(req, res) {
 
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
+      console.log(found.attributes);
       res.status(200).send(found.attributes);
     } else {
       util.getUrlTitle(uri, function(err, title) {
@@ -77,20 +78,47 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.get('/signup', function(req, res) {
+  res.render('signup');
+})
+
+app.post('/signup',
+function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  new User({ username: username }).fetch().then(function(found) {
+    if (found) {
+      res.status(403).send('Username already exists');
+    } else {
+      Users.create({
+        username: username,
+        password: password
+      })
+      .then(function(newUser) {
+        res.status(200).send(newUser);
+      });
+    }
+  });
+});
 
 app.get('/login', function(req, res) {
   res.render('login');
 })
 
-app.get('/signup', function(req, res) {
-  res.render('signup');
+app.post('/login', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  new User({ username: username }).fetch().then(function(found) {
+    if (found) {
+      console.log(found, 'found in login @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+      res.status(200).send('YEAH Murica');
+    } else {
+      res.status(404).send('User not found');
+    }
+  });
 })
-
-app.post('/signup', function(req, res) {
-  res.end();
-})
-
-
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
