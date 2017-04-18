@@ -54,7 +54,7 @@ function(req, res) {
 
   new Link({ url: uri , userId: req.session.userID}).fetch().then(function(found) {
     if (found) {
-      console.log(found.attributes);
+      //console.log(found.attributes);
       res.status(200).send(found.attributes);
     } else {
       util.getUrlTitle(uri, function(err, title) {
@@ -93,17 +93,16 @@ function(req, res) {
     if (found) {
       res.status(403).send('Username already exists');
     } else {
-      bcrypt.hash(password, null, null, function(err, hash) {
-        Users.create({
-          username: username,
-          password: hash
-        })
-        .then(function(newUser) {
-          console.log(newUser, 'this is our newUser obj @@@@@@@@@@@@@@@@');
-          req.session.userID = newUser.attributes.id;
-          //req.session.user = username;
-          res.redirect('/');
-        });
+      Users.create({
+        username: username,
+        password: password
+      })
+      .then(function(newUser) {
+        req.session.userID = newUser.attributes.id;
+        return newUser.save()
+      })
+      .then(function() {
+        res.redirect('/');
       });
     }
   });
