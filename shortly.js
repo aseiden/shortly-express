@@ -38,7 +38,7 @@ function(req, res) {
 
 app.get('/links', util.restrict,
 function(req, res) {
-  Links.reset().query({where: {userId: req.session.user}}).fetch().then(function(links) {
+  Links.reset().query({where: {userId: req.session.userID}}).fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
@@ -52,7 +52,7 @@ function(req, res) {
     return res.sendStatus(404);
   }
 
-  new Link({ url: uri , userId: req.session.user}).fetch().then(function(found) {
+  new Link({ url: uri , userId: req.session.userID}).fetch().then(function(found) {
     if (found) {
       console.log(found.attributes);
       res.status(200).send(found.attributes);
@@ -67,7 +67,7 @@ function(req, res) {
           url: uri,
           title: title,
           baseUrl: req.headers.origin,
-          userId: req.session.user
+          userId: req.session.userID
         })
         .then(function(newLink) {
           res.status(200).send(newLink);
@@ -99,7 +99,9 @@ function(req, res) {
           password: hash
         })
         .then(function(newUser) {
-          req.session.user = username;
+          console.log(newUser, 'this is our newUser obj @@@@@@@@@@@@@@@@');
+          req.session.userID = newUser.attributes.id;
+          //req.session.user = username;
           res.redirect('/');
         });
       });
@@ -121,7 +123,8 @@ app.post('/login', function(req, response) {
         if (!isPasswordCorrect) {
           response.redirect('/login');
         } else {
-          req.session.user = username;
+          console.log(found, 'this is found @@@@@@@@@@@@@@@@')
+          req.session.userID = found.attributes.id;
           response.redirect('/')
         }
       })
