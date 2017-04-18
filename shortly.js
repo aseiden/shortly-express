@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var bcrypt = require('bcrypt-nodejs');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -91,12 +92,14 @@ function(req, res) {
     if (found) {
       res.status(403).send('Username already exists');
     } else {
-      Users.create({
-        username: username,
-        password: password
-      })
-      .then(function(newUser) {
-        res.redirect('/');
+      bcrypt.hash(password, null, null, function(err, hash) {
+        Users.create({
+          username: username,
+          password: hash
+        })
+        .then(function(newUser) {
+          res.redirect('/');
+        });
       });
     }
   });
@@ -106,21 +109,22 @@ app.get('/login', function(req, res) {
   res.render('login');
 })
 
-app.post('/login', function(req, res) {
+app.post('/login', function(req, response) {
   var username = req.body.username;
   var password = req.body.password;
 
   new User({ username: username }).fetch().then(function(found) {
     if (found) {
-      console.log(found, 'found in login @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-      if (found.attributes.password === password) {
-        req.session.user = username;
-        res.redirect('/')
-      }else {
-        res.redirect('/login');
-      }
+      bcrypt.compare(password, found.attributes.password, function(err, res) {
+        if (err) {
+          response.redirect('/login');
+        } else {
+          req.session.user = username;
+          response.redirect('/')
+        }
+      })
     } else {
-      res.redirect('/login');
+      response.redirect('/login');
     }
   });
 })
