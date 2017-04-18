@@ -4,7 +4,6 @@ var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
 
-
 var db = require('./app/config');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
@@ -23,26 +22,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+//session
+app.use(session({secret: 'YOLO, no FOMO', cookie: { maxAge: 60000 } }));
 
-
-app.get('/',
+app.get('/', util.restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create',
+app.get('/create', util.restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links',
+app.get('/links', util.restrict,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
-app.post('/links',
+app.post('/links', util.restrict,
 function(req, res) {
   var uri = req.body.url;
 
@@ -96,7 +96,7 @@ function(req, res) {
         password: password
       })
       .then(function(newUser) {
-        res.status(200).send(newUser);
+        res.redirect('/');
       });
     }
   });
@@ -113,12 +113,19 @@ app.post('/login', function(req, res) {
   new User({ username: username }).fetch().then(function(found) {
     if (found) {
       console.log(found, 'found in login @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-      res.status(200).send('YEAH Murica');
+      if (found.attributes.password === password) {
+        req.session.user = username;
+        res.redirect('/')
+      }else {
+        res.redirect('/login');
+      }
     } else {
-      res.status(404).send('User not found');
+      res.redirect('/login');
     }
   });
 })
+
+
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
