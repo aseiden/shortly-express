@@ -38,7 +38,7 @@ function(req, res) {
 
 app.get('/links', util.restrict,
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
+  Links.reset().query({where: {userId: req.session.user}}).fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
@@ -52,7 +52,7 @@ function(req, res) {
     return res.sendStatus(404);
   }
 
-  new Link({ url: uri }).fetch().then(function(found) {
+  new Link({ url: uri , userId: req.session.user}).fetch().then(function(found) {
     if (found) {
       console.log(found.attributes);
       res.status(200).send(found.attributes);
@@ -66,7 +66,8 @@ function(req, res) {
         Links.create({
           url: uri,
           title: title,
-          baseUrl: req.headers.origin
+          baseUrl: req.headers.origin,
+          userId: req.session.user
         })
         .then(function(newLink) {
           res.status(200).send(newLink);
@@ -98,6 +99,7 @@ function(req, res) {
           password: hash
         })
         .then(function(newUser) {
+          req.session.user = username;
           res.redirect('/');
         });
       });
@@ -115,8 +117,8 @@ app.post('/login', function(req, response) {
 
   new User({ username: username }).fetch().then(function(found) {
     if (found) {
-      bcrypt.compare(password, found.attributes.password, function(err, res) {
-        if (err) {
+      bcrypt.compare(password, found.attributes.password, function(err, isPasswordCorrect) {
+        if (!isPasswordCorrect) {
           response.redirect('/login');
         } else {
           req.session.user = username;
